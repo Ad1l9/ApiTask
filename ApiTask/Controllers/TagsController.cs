@@ -1,6 +1,4 @@
-﻿using ApiTask.DAL;
-using ApiTask.Entities;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,7 +18,7 @@ namespace ApiTask.Controllers
         [HttpGet]
         public async Task<IActionResult> Get(int page=1,int take=2)
         {
-            List<Tag> tags = await _context.Tags.Skip((page - 1) * take).Take(take).ToListAsync();
+            List<Tag> tags = await _context.Tags.AsNoTracking().Skip((page - 1) * take).Take(take).ToListAsync();
             return Ok(tags);
         }
 
@@ -37,15 +35,16 @@ namespace ApiTask.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Tag tag)
+        public async Task<IActionResult> Create([FromForm]CreateTagDTO tagDto)
         {
+            Tag tag = new() { Name = tagDto.Name };
             await _context.Tags.AddAsync(tag);
             await _context.SaveChangesAsync();
             return StatusCode(StatusCodes.Status201Created,tag);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id,string name)
+        public async Task<IActionResult> Update(int id,UpdateTagDTO tagDto)
         {
             if (id <= 0) return StatusCode(StatusCodes.Status400BadRequest);
 
@@ -53,7 +52,7 @@ namespace ApiTask.Controllers
 
             if (existed is null) return StatusCode(StatusCodes.Status404NotFound);
 
-            existed.Name = name;
+            existed.Name = tagDto.Name;
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -66,7 +65,7 @@ namespace ApiTask.Controllers
 
             if (id <= 0) return StatusCode(StatusCodes.Status400BadRequest);
 
-            Tag existed = await _context.Tags.FirstOrDefaultAsync(t => t.Id == id);
+            Tag existed = await _context.Tags.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
 
             if (existed is null) return StatusCode(StatusCodes.Status404NotFound);
 
